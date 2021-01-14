@@ -16,9 +16,9 @@ This repository contains the source code for all my programs written to learn x8
   - If not, right click on the source file (.asm file) -> properties -> general -> and set item type.
 4. Your project is now ready to build, but to add the Irvine32.inc library we need to perform a few more steps.
   - Make sure that the Irvine library folder is saved direclty under you c-drive.
-5. Now to configure Visual Studio so that you executble file gets linked correctly.
-  a. Go to the Irvine32.inc file, right click -> properties -> copy the file path.\n
-  b. Right click on the solution -> properties - > linker -> Additional Library Directories -> paste the filepath.</br>
+5. Now to configure Visual Studio so that you executble file gets linked correctly.\
+  a. Go to the Irvine32.inc file, right click -> properties -> copy the file path.\
+  b. Right click on the solution -> properties - > linker -> Additional Library Directories -> paste the filepath.<br/>
   c. Go to the linker settings -> Input -> Additional dependancies -> add the name of the library file to the front of the semi-colon
     seperated list (Irvine32.lib)\n
   d. (Still inside the properties tab) Microsoft Macro Assembler -> General -> Include Paths -> Include the path to the Irvine32.inc file (c:\Irvine )\n
