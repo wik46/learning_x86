@@ -8,7 +8,7 @@ This repository contains the source code for all my programs written to learn x8
 - Assembler used: MASM
 - IDE: Microsoft Visual Studio Enterprize 2019
 
-## Instruction for setup with Microsoft Visual Studio (After installation of the Irvine library from his website http://asmirvine.com/gettingStartedVS2019/index.htm)
+## Instruction for setup with Microsoft Visual Studio <br/>(After installation of the Irvine library from his website http://asmirvine.com/gettingStartedVS2019/index.htm)
 1. Open an empty project with Visual Studio.
 2. Right click on main project file -> Build Dependancies -> Build Customizations -> MASM
 3. Create a .asm file for your assembly source or copy one from this repository.
