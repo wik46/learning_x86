@@ -1,0 +1,151 @@
+;// Author: Lodewyk Jansen van Rensburg
+;// Last modified: February 6, 2021
+;// How to use this assembly source file.
+;//		- This is the first program I have written that focusses more on arrays.
+;//		- Like all the other files in this repository, it was created when I was studying the concepts.
+;//		- All information in this file should not be taken as a fact and rather look at the textbook used.
+;//		*Note configuration for Irvine32.inc not done yet.
+;// Description: The purpose of this source file is to study Indirect Accessing in assembly.
+;//					* We look at the following topics:
+;//					1. Arrays in Assembly and how to traverse them.
+;//					2. Pointers in Assembly.
+
+
+.386
+.model	flat, stdcall
+.stack	4096					;// This is one of the three segements in the program. Other two are .data and .code.
+ExitProcess		PROTO, dwExitCode:DWORD
+
+;// Integer Literals.
+ByteArrayLength EQU 100
+; test1 = 34.42		// We can only use the ( = ) directive when the expression value is an integer.
+test2	EQU		34.45  ;// But we can use EQU when the expression value does not evaluate to an integer.
+PI		EQU		<3.1415>
+move_eax_to_zero	TEXTEQU		<mov	eax, 0>	;// This is not recommended. Only used for studying purposes.
+;// Labels:
+;// Remember we get 2 types of labels, data label and a code label.
+;// These labels mark the address where the data is stored. The code label ends with a semi-colon:
+
+.data
+;// Remember that 'DwordArray' is just a label so that we know the memory address where the array starts.
+DwordArray	DWORD 1h, 200028h, 300028h, 400028h, 500028h			;// Remember IA-32 uses little-endian.
+ar_length = ($ - DwordArray)/ 4	;// We use this to calulcate the length of the array. Note that we have an array of 4-
+								;// byte elements. Therefore we devide by 4.
+								;// The $ operator returns the CURRENT ADDRESS IN MEMORY. Therefore the difference
+								;// between it and the address marked by the label DwordArray is the size in bytes
+								;// used by the array.
+ByteArray	BYTE  ByteArrayLength dup(?)
+DwordArray_pointer	DWORD DwordArray				;// The variable name refers to the address that the variable was 
+													;// defined. We mark the offset/ address with that label.
+.code
+
+main	PROC
+	;// 1. We used the the pointer to the first element in the array to change the second element.
+	mov		esi, [DwordArray_pointer]
+	mov		eax, [esi]
+	
+	;// *************8 Finished ****************
+	;// Calling a procedure that will sum all the elements in the array.
+	;// Example of a procedure that accepts parameters passed by address.
+	push	OFFSET DwordArray
+	push	LENGTHOF DWORDARRAY
+	call	SumArray
+	add		esp, 8;// Removing the arguments from the stack.
+	;// *****************************************
+
+	;// Calling a procedure that will sum the two arguments passed on the stack frame.
+	;// We pass the two arguments by value.
+	push	1
+	push	2
+	call	SumInt
+	add		Esp, 8
+
+	;// What happened here is I defined a macro that will move 0 to the eax register.
+	;// What happens is that during assembling, the text gets replaced with the line of text 'mov eax, 0'
+	;// as defined by the macro. Think of this as the assembler pastes the code that I set to this macro.
+	move_eax_to_zero
+
+	INVOKE	ExitProcess, 0
+main	ENDP
+
+
+;// Procedures:
+;// ==================================================================
+;// We get three ways to pass parameters/ arguments to procedures in MASM
+;// ==================================================================
+;// 1. Pass as global variables. (Avoid)
+
+;// 2. Pass as registers. (Avoid)
+
+;// 3. Pass with on stack frame. (Recommended and what will be used.)
+;// - Arguments : Values passed to a subroutine by calling program.
+;// - Parameters : Values received by a called subtrountine.
+
+;// * We can pass arguments by value or by reference.
+;//		I - Pass by value, we copy the value into a temporary local memory address.
+;//		II - Pass by reference, we copy the address of memory into a pointer. We can manipulate the contents
+;//				at that memory address.
+
+;// Procedure: SumArray
+;//	Description: This procedure needs the offset (address) of the first element in the array and
+;//					the length of the array. It adds all the elements inside the array and returns
+;//					the sum in eax.
+;//	Receives: First parameter: address of the first element in the array.
+;//			  Second Parameter: length of the array.
+;// Returns: The sum of all the elements in the array in eax.
+SumArray	PROC
+	;// Setting up procedure to use the stackframe correctly.
+	push	ebp
+	mov		ebp, esp		;// Base reference address for the procedure is ebp.
+	;// We set eax to zero because we need it during the accumulation.
+	mov		eax, 0
+	mov		esi, [ebp + 12]		;// Esi now contains the address/ offset of the first element in the array.
+	; add		esi, 12;// We point esi to address EBP + 12 on the stack.
+
+	;// Our loop will iterate the for every element.
+	mov		ecx, [ebp + 8];// This is where the length of the array is pushed onto the stackframe.
+	StartLoop:
+		add		eax, [esi]
+		add		esi, TYPE DWORD		;// We sum an array of 32-bit elements.
+		loop	StartLoop			;// Remember loop instruction decrements cx, and then checks if cx = 0.
+									;// If cx = 0, loop terminates, else loop continues.
+	;// Clean up the stack frame.
+	;// Why do we need to do this. 
+	;// When return is called, it pops the value on top of the stack into the instruction pointer.
+	;// Therefore, we need the value that the stack pointer is pointing to be the return address of the caller.
+	;// That is we need esp = "Address of statement just after procedure call".
+	;// The act of cleaning up the stack is performing the following tasks.
+	mov		esp, ebp				;// Now the stack pointer is almost where we want it.
+	pop		ebp						;// Before pop, the stack pointer pointed to the base reference. Now we pop this
+									;// so that the stack pointer points to the return address when the 'ret'
+									;// instruction is called.
+	ret
+SumArray	ENDP
+
+;// Procedure: SumInt
+;// Description: This is a basic procedure that sums to integers.
+;//				  The purpose of the procedure is to practise how to create a stack frame 
+;//				   for the procedure such that we pass the parameters on the stack and not
+;//					using global variables or registers.
+;//	Receives: Two integers that are pushed onto the stack at address Ebp + 8 and Ebp + 12
+;//	Returns: The result in eax.
+SumInt	PROC
+	;// Setting up the stack frame.
+	push	ebp
+	mov		ebp, esp			;// We now have a base reference for the procedure.
+	;// Creating local variables to get practise creating them.
+	;// There is no use for them in this procedure, we only create them for practise purposes.
+	sub		esp, 8	
+	mov		DWORD PTR [ebp - 4], 1			;// Remember that MASM doesnt know what is stored at ebp-4.	
+	mov		DWORD PTR [ebp - 8], 2			;// We need to tell MASM a DWORD is store at the address ebp -8.
+	
+	;// Sum the two ints and store the result in eax.
+	mov		eax, DWORD PTR [ebp + 8]
+	add		eax, DWORD PTR [ebp + 12]
+	;// Return the stack pointer so that it can push the correct return address into the instruction register.
+	mov		esp, ebp
+	pop		ebp
+	ret
+
+SumInt	ENDP
+END		main
